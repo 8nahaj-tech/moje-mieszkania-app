@@ -7,7 +7,7 @@ import time
 # --- 1. KONFIGURACJA STRONY ---
 st.set_page_config(page_title="Wrocław Estate Center", page_icon="🏙️", layout="wide")
 
-# --- 2. STYLIZACJA CSS ---
+# --- 2. STYLIZACJA CSS (WYGLĄD + ANIMACJA ASYSTENTA) ---
 st.markdown("""
 <style>
     /* Tło aplikacji */
@@ -16,22 +16,38 @@ st.markdown("""
         color: white;
     }
     
-    /* ANIMACJA LOTU (POPRAWIONA) */
-    @keyframes patrol-flight {
-        0% { left: -150px; bottom: 50px; transform: scaleX(1); }           /* Start z lewej */
-        45% { left: 110%; bottom: 300px; transform: scaleX(1); }          /* Wylot w prawo */
-        50% { left: 110%; bottom: 300px; transform: scaleX(-1); }         /* Obrót w miejscu (poza ekranem) */
-        55% { left: 110%; bottom: 100px; transform: scaleX(-1); }         /* Obniżenie pułapu */
-        100% { left: -150px; bottom: 20px; transform: scaleX(-1); }       /* Powrót w lewo */
+    /* --- NOWA ANIMACJA: "LOT PRZEWODNIKA" --- */
+    @keyframes guide-sequence {
+        /* 1. Start: Okolice zakładki "Moje Wybrane" (lewa góra) */
+        0%   { left: 2%;  top: 110px; transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 10px rgba(255,255,255,0.4)); }
+        10%  { left: 2%;  top: 110px; transform: scale(1.1) rotate(5deg); } /* Lekkie uniesienie */
+
+        /* 2. Lot do przycisku "SKANUJ" (środek ekranu) */
+        25%  { left: 45%; top: 230px; transform: scale(1) rotate(10deg); }
+        /* "WSKAZANIE": Powiększenie i złota poświata */
+        35%  { left: 45%; top: 230px; transform: scale(1.4) rotate(0deg); filter: drop-shadow(0 0 35px rgba(255, 215, 0, 1)); }
+        40%  { left: 45%; top: 230px; transform: scale(1) rotate(0deg); }
+
+        /* 3. Lot w dół do obszaru "ofert" */
+        55%  { left: 15%; top: 600px; transform: scale(1) rotate(-10deg); filter: drop-shadow(0 0 10px rgba(255,255,255,0.4)); }
+
+        /* 4. "UŚMIECH I OCZKO" -> Radosny piruet i zielone światło sukcesu */
+        65%  { left: 15%; top: 600px; transform: scale(1.2) rotate(0deg); }
+        70%  { left: 15%; top: 600px; transform: scale(1.3) rotate(360deg); filter: drop-shadow(0 0 30px rgba(50, 255, 50, 1)); } /* OBRÓT! */
+        75%  { left: 15%; top: 600px; transform: scale(1.2) rotate(340deg); }
+        80%  { left: 15%; top: 600px; transform: scale(1.2) rotate(380deg); }
+
+        /* 5. Odlot poza ekran */
+        100% { left: 120%; top: 300px; transform: scale(1) rotate(20deg); }
     }
 
     .harry-potter {
         position: fixed;
-        z-index: 99999;
-        width: 120px; /* Rozmiar postaci */
-        animation: patrol-flight 25s linear infinite; /* Czas przelotu */
-        pointer-events: none; /* Kliknięcia przechodzą przez niego */
-        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4)); /* Magiczna poświata */
+        z-index: 99999; /* Zawsze na wierzchu */
+        width: 110px;   /* Rozmiar postaci */
+        /* Animacja trwa 25s, jest płynna (ease-in-out) i zapętlona */
+        animation: guide-sequence 25s ease-in-out infinite;
+        pointer-events: none; /* Kliknięcia przez niego przechodzą */
     }
 
     /* Stylizacja Zakładek */
@@ -69,8 +85,8 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. WSTAWIENIE HARRY'EGO (LINK Z GITHUB RAW - NIEZAWODNY) ---
-# Używamy grafiki z otwartego repozytorium Microsoft Fluent Emoji
+# --- 3. WSTAWIENIE MAGA-ASYSTENTA ---
+# Używamy niezawodnej grafiki 3D z GitHuba
 st.markdown("""
 <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Mage.png" class="harry-potter">
 """, unsafe_allow_html=True)
