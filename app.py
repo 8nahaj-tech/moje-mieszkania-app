@@ -5,25 +5,33 @@ import json
 import pandas as pd
 import numpy as np
 
-# --- IMPORTY AI Z OBSŁUGĄ BŁĘDÓW ---
+# --- IMPORTY AI ---
 try:
     from sklearn.linear_model import LinearRegression
     import matplotlib.pyplot as plt
-    AI_DOSTEPNE = True
+    AI_READY = True
 except ImportError:
-    AI_DOSTEPNE = False
+    AI_READY = False
 
 # --- 1. KONFIGURACJA ---
-st.set_page_config(page_title="Estate Monitor AI", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="Estate AI Core", page_icon="🧠", layout="wide")
 
 st.markdown("""
 <style>
     .stApp { background-color: #0e1117; color: white; }
-    .ai-box { background: #1e3a8a; padding: 20px; border-radius: 10px; border: 1px solid #3b82f6; margin-top: 20px; }
+    
+    /* Sekcja AI */
+    .ai-container {
+        background: linear-gradient(180deg, #1e3a8a 0%, #111827 100%);
+        border: 1px solid #3b82f6;
+        padding: 25px; border-radius: 15px; margin-top: 20px;
+    }
+    .prediction-value { font-size: 40px; font-weight: 800; color: #60a5fa; text-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+    .debug-info { font-size: 12px; color: #6b7280; font-family: monospace; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 2. DANE ---
+# --- 2. LINKI (LIVE) ---
 LINKS = [
     "https://www.otodom.pl/pl/oferta/nowe-wykonczone-2-pok-ogrod-blisko-uczelni-ID4yZO0",
     "https://www.otodom.pl/pl/oferta/piekne-mieszkanie-dwupoziomowe-4-pokojowe-z-balkon-ID4z2b8",
@@ -32,12 +40,22 @@ LINKS = [
     "https://www.otodom.pl/pl/oferta/5-pokoi-szereg-ogrodek-stacja-pkp-wroclaw-ID4yBI2"
 ]
 
-# --- 3. SCRAPER ---
+# --- 3. DANE ZAPASOWE (GDYBY OTODOM BLOKOWAŁ) ---
+# To są przykładowe dane z Wrocławia, żeby AI miało na czym pracować w razie awarii
+BACKUP_DATA = [
+    {"price": 450000, "area": 35, "title": "Dane historyczne 1"},
+    {"price": 580000, "area": 48, "title": "Dane historyczne 2"},
+    {"price": 720000, "area": 60, "title": "Dane historyczne 3"},
+    {"price": 850000, "area": 75, "title": "Dane historyczne 4"},
+    {"price": 1200000, "area": 100, "title": "Dane historyczne 5"},
+]
+
+# --- 4. SCRAPER ---
 def get_data(url):
     headers = {"User-Agent": "Mozilla/5.0"}
-    data = {"price": 0, "area": 0, "img": None, "link": url}
+    data = {"price": 0, "area": 0, "img": None, "link": url, "found": False}
     try:
-        r = requests.get(url, headers=headers)
+        r = requests.get(url, headers=headers, timeout=5)
         if r.status_code == 200:
             soup = BeautifulSoup(r.content, "html.parser")
             script = soup.find("script", id="__NEXT_DATA__")
@@ -48,94 +66,106 @@ def get_data(url):
                 data["area"] = float(target.get('Area', 0))
                 imgs = j['props']['pageProps']['ad']['images']
                 if imgs: data["img"] = imgs[0].get('medium')
+                if data["price"] > 0: data["found"] = True
     except: pass
     return data
 
-# --- 4. FUNKCJA AI ---
-def run_ai(dataset, user_area):
-    # Filtrujemy tylko poprawne dane
-    valid = [d for d in dataset if d['price'] > 0 and d['area'] > 0]
+# --- 5. MÓZG AI ---
+def brain_process(df, user_area):
+    # Regresja Liniowa
+    X = df['area'].values.reshape(-1, 1)
+    y = df['price'].values
     
-    if len(valid) < 2:
-        st.warning(f"⚠️ Za mało danych do AI. Pobrano poprawnie: {len(valid)} ofert. Potrzeba minimum 2.")
-        return
-
-    # Przygotowanie danych
-    X = np.array([d['area'] for d in valid]).reshape(-1, 1)
-    y = np.array([d['price'] for d in valid])
-
-    # Trening
     model = LinearRegression()
     model.fit(X, y)
-    prediction = model.predict(np.array([[user_area]]))[0]
-
-    # WYNIK
-    st.markdown(f"""
-    <div class="ai-box">
-        <h3>🔮 AI Przewiduje:</h3>
-        Wartość mieszkania <b>{user_area} m²</b> to:
-        <h1 style="color:#60a5fa">{prediction:,.0f} zł</h1>
-    </div>
-    """, unsafe_allow_html=True)
-
-    # WYKRES
-    fig, ax = plt.subplots(figsize=(8, 4))
-    fig.patch.set_facecolor('#0e1117')
-    ax.set_facecolor('#1f2937')
     
-    # Punkty
-    ax.scatter(df['area'], df['price'], color='#60a5fa', s=100, label='Oferty')
-    # Predykcja
-    ax.scatter([user_area], [prediction], color='#ef4444', s=200, label='Twoja Wycena')
-    # Linia trendu
-    line_x = np.linspace(df['area'].min(), df['area'].max(), 100).reshape(-1, 1)
-    line_y = model.predict(line_x)
-    ax.plot(line_x, line_y, color='white', linestyle='--', alpha=0.5)
+    predicted_price = model.predict([[user_area]])[0]
+    return model, predicted_price
+
+# --- 6. INTERFEJS ---
+st.title("🧠 Mózg Nieruchomości")
+st.write("System uczy się relacji CENA <-> METRAŻ na podstawie dostępnych ofert.")
+
+if not AI_READY:
+    st.error("⚠️ Brak bibliotek AI! Zaktualizuj requirements.txt")
+    st.stop()
+
+# SUWAK DO STEROWANIA AI (Zawsze widoczny)
+st.sidebar.header("🎛️ Panel Sterowania AI")
+user_sqm = st.sidebar.slider("Jaki metraż chcesz wycenić?", 25, 120, 50, step=1)
+
+if st.button("🚀 URUCHOM PROCES UCZENIA"):
     
-    ax.tick_params(colors='white')
-    ax.legend()
-    st.pyplot(fig)
-
-
-# --- 5. INTERFEJS ---
-st.title("🤖 Estate Monitor AI - Tryb Diagnostyczny")
-
-if not AI_DOSTEPNE:
-    st.error("❌ BŁĄD: Biblioteki AI nie są zainstalowane! Sprawdź plik requirements.txt (czy jest tam scikit-learn i matplotlib).")
-else:
-    st.success("✅ Biblioteki AI są gotowe.")
-
-if st.button("🚀 URUCHOM ANALIZĘ"):
-    
+    # 1. ZBIERANIE DANYCH
+    live_data = []
     progress = st.progress(0)
-    dataset = []
-    
-    cols = st.columns(len(LINKS))
     
     for i, link in enumerate(LINKS):
         progress.progress((i + 1) / len(LINKS))
         d = get_data(link)
-        dataset.append(d)
-        
-        with cols[i]:
-            if d['img']: st.image(d['img'])
-            st.caption(f"{d['price']:,.0f} zł | {d['area']} m²")
+        if d['found']:
+            live_data.append(d)
     
     progress.empty()
+
+    # 2. DECYZJA: UŻYWAMY DANYCH LIVE CZY ZAPASOWYCH?
+    df = pd.DataFrame(live_data)
     
-    # Przekazujemy dane do DataFrame żeby łatwiej rysować wykres
-    df = pd.DataFrame(dataset)
-    df = df[df['area'] > 0] # Tylko poprawne
-    
-    st.divider()
-    
-    if df.empty:
-        st.error("❌ Nie udało się pobrać cen z Otodom. Strona mogła zablokować zapytania lub zmienić strukturę.")
+    source_info = ""
+    if len(df) >= 2:
+        source_info = f"✅ Sukces! AI uczy się na {len(df)} aktualnych ofertach z Otodom."
     else:
-        st.write(f"📊 Zebrano dane z {len(df)} ofert. Uruchamiam AI...")
+        source_info = f"⚠️ Otodom zablokował połączenie (pobrano {len(df)} ofert). AI przełącza się na **DANE ZAPASOWE**, żeby pokazać wynik."
+        df = pd.DataFrame(BACKUP_DATA) # Ładujemy backup
+
+    st.info(source_info)
+
+    # 3. OBLICZENIA AI
+    model, prediction = brain_process(df, user_sqm)
+
+    # 4. WIZUALIZACJA WYNIKU
+    col1, col2 = st.columns([1, 2])
+
+    with col1:
+        st.markdown(f"""
+        <div class="ai-container">
+            <div style="color:#9ca3af; font-size:14px">Szacowana cena dla <b>{user_sqm} m²</b>:</div>
+            <div class="prediction-value">{prediction:,.0f} zł</div>
+            <div style="font-size:11px; margin-top:10px; color:#34d399">
+                Model: Regresja Liniowa<br>
+                Baza wiedzy: {len(df)} nieruchomości
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col2:
+        # WYKRES
+        fig, ax = plt.subplots(figsize=(8, 4))
+        fig.patch.set_facecolor('#0e1117')
+        ax.set_facecolor('#1f2937')
         
-        # Suwak
-        user_area = st.slider("Wybierz metraż (m²)", 20, 100, 50)
+        # Punkty z danych
+        ax.scatter(df['area'], df['price'], color='#3b82f6', s=80, label='Znane oferty')
         
-        # Odpalenie AI
-        run_ai(dataset, user_area)
+        # Linia trendu (jak myśli AI)
+        x_range = np.linspace(df['area'].min(), df['area'].max(), 100).reshape(-1, 1)
+        y_range = model.predict(x_range)
+        ax.plot(x_range, y_range, color='white', linestyle='--', alpha=0.3, label='Linia trendu')
+        
+        # Wynik użytkownika
+        ax.scatter([user_sqm], [prediction], color='#ef4444', s=200, label='TWÓJ WYNIK', zorder=5)
+        
+        ax.set_xlabel("Metraż (m²)", color="white")
+        ax.set_ylabel("Cena (PLN)", color="white")
+        ax.tick_params(colors='white')
+        ax.legend()
+        ax.grid(color='white', alpha=0.05)
+        
+        st.pyplot(fig)
+
+    # Tabela z danymi na których się uczył
+    with st.expander("🔍 Zobacz dane, na których uczył się model"):
+        st.dataframe(df[['title', 'area', 'price']])
+
+else:
+    st.write("👈 Kliknij przycisk, aby nakarmić AI danymi.")
