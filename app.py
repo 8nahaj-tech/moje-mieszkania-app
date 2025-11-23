@@ -10,29 +10,29 @@ st.set_page_config(page_title="Wrocław Estate Center", page_icon="🏙️", lay
 # --- 2. STYLIZACJA CSS (WYGLĄD + HARRY POTTER) ---
 st.markdown("""
 <style>
-    /* Tło aplikacji - Ciemny motyw */
+    /* Tło aplikacji */
     .stApp {
         background: linear-gradient(135deg, #141E30 0%, #243B55 100%);
         color: white;
     }
     
-    /* ANIMACJA HARRY'EGO POTTERA */
-    @keyframes run-harry {
-        0% { left: -200px; transform: scaleX(1); }    /* Start z lewej */
-        40% { left: 110%; transform: scaleX(1); }     /* Wybiega w prawo */
-        50% { left: 110%; transform: scaleX(-1); }    /* Wraca */
-        90% { left: -200px; transform: scaleX(-1); }  /* Wraca na lewo */
-        100% { left: -200px; transform: scaleX(1); }
+    /* ANIMACJA HARRY'EGO NA MIOTLE */
+    @keyframes fly-harry {
+        0% { left: -300px; top: 80%; transform: scaleX(1); }    /* Start z lewej */
+        40% { left: 110%; top: 20%; transform: scaleX(1); }     /* Wylatuje w prawo i do góry */
+        50% { left: 110%; top: 30%; transform: scaleX(-1); }    /* Obraca się */
+        90% { left: -300px; top: 70%; transform: scaleX(-1); }  /* Wraca w lewo i w dół */
+        100% { left: -300px; top: 80%; transform: scaleX(1); }
     }
 
     .harry-potter {
         position: fixed;
-        bottom: 5px;
-        z-index: 9999;
-        width: 80px; /* Wielkość postaci */
-        animation: run-harry 30s linear infinite; /* Czas biegu */
+        z-index: 99999; /* Bardzo wysoki indeks, żeby był NA WIERZCHU */
+        width: 120px; /* Wielkość postaci */
+        animation: fly-harry 15s linear infinite; /* Czas przelotu */
         pointer-events: none; /* Kliknięcia przechodzą przez niego */
-        opacity: 0.9;
+        border-radius: 0 !important; /* Bez zaokrąglonych rogów dla postaci */
+        box-shadow: none !important; /* Bez cienia pod postacią */
     }
 
     /* Stylizacja Zakładek */
@@ -66,13 +66,14 @@ st.markdown("""
     }
     a.link-btn:hover { background-color: #ff4b2b; transform: scale(1.05); }
     
-    img { border-radius: 10px; object-fit: cover; }
+    /* Zdjęcia ofert mają ramki, ale Harry nie */
+    .offer-img { border-radius: 10px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. WSTAWIENIE HARRY'EGO (GIF) ---
+# --- 3. WSTAWIENIE HARRY'EGO (LINK Z GIPHY) ---
 st.markdown("""
-<img src="https://media.tenor.com/2s_01a30vS8AAAAi/pixel-art-run.gif" class="harry-potter">
+<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbm95YXk4a2g0Y2M2d242aW85aGk5aGk5aGk5aGk5aGk5aSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/hH5xZ0b7yD6n6/giphy.gif" class="harry-potter">
 """, unsafe_allow_html=True)
 
 
@@ -145,7 +146,7 @@ def render_tab(links_list, tab_name):
             <div class="offer-card">
                 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
                     <div style="flex: 1; min-width: 250px;">
-                        <img src="{data['image_url']}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px;">
+                        <img src="{data['image_url']}" class="offer-img" style="width: 100%; height: 200px;">
                     </div>
                     <div style="flex: 2; min-width: 250px;">
                         <div class="offer-title">{data['title']}</div>
