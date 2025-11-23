@@ -9,77 +9,83 @@ from datetime import datetime
 import os
 
 # --- 1. KONFIGURACJA STRONY ---
-st.set_page_config(page_title="Nieruchomości PRO + AI", page_icon="🏠", layout="wide")
+st.set_page_config(page_title="Estate Monitor PRO", page_icon="🏠", layout="wide")
 
-# --- 2. STYLIZACJA (CLEAN DESIGN) ---
+# --- 2. STYLIZACJA CSS (NAPRAWIONA) ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap');
     
-    html, body, [class*="css"] { font-family: 'Roboto', sans-serif; }
-    .stApp { background-color: #f0f2f5; color: #1c1e21; }
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    .stApp { background-color: #f3f4f6; color: #1f2937; }
 
     /* KARTA OFERTY */
     .property-card {
         background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        margin-bottom: 25px;
+        border-radius: 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
         overflow: hidden;
-        border: 1px solid #e1e4e8;
+        border: 1px solid #e5e7eb;
         transition: transform 0.2s;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
     }
-    .property-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+    .property-card:hover { transform: translateY(-5px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
 
-    /* GÓRA KARTY (ZDJĘCIE) */
-    .card-top { position: relative; height: 200px; }
+    /* ZDJĘCIE */
+    .card-img-container { position: relative; height: 200px; width: 100%; }
     .card-img { width: 100%; height: 100%; object-fit: cover; }
     .badge {
-        position: absolute; top: 10px; left: 10px;
-        background: #0078ff; color: white; padding: 4px 10px;
-        border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase;
+        position: absolute; top: 12px; left: 12px;
+        background: #2563eb; color: white; padding: 4px 12px;
+        border-radius: 20px; font-size: 10px; font-weight: 800; text-transform: uppercase;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
     }
 
-    /* TREŚĆ KARTY */
-    .card-content { padding: 20px; }
-    .price-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
-    .price { font-size: 24px; font-weight: 800; color: #1c1e21; }
-    .title { font-size: 16px; font-weight: 600; color: #444; margin-bottom: 15px; line-height: 1.4; height: 45px; overflow: hidden; }
-
-    /* AI OPIS */
-    .ai-desc-box {
-        background-color: #f0f8ff;
-        border-left: 4px solid #0078ff;
-        padding: 10px;
-        margin-bottom: 15px;
-        font-size: 13px;
-        color: #333;
-        font-style: italic;
-    }
-
-    /* HISTORIA CEN */
-    .history-box {
-        font-size: 11px;
-        color: #666;
-        border-top: 1px solid #eee;
-        padding-top: 10px;
-        margin-top: 10px;
+    /* TREŚĆ */
+    .card-content { padding: 20px; flex-grow: 1; display: flex; flex-direction: column; }
+    
+    .price { font-size: 24px; font-weight: 800; color: #111827; margin-bottom: 8px; }
+    
+    .title { 
+        font-size: 15px; font-weight: 500; color: #4b5563; 
+        margin-bottom: 16px; line-height: 1.4; 
+        height: 42px; overflow: hidden; /* Ograniczenie do 2 linii */
+        display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
     }
 
     /* PARAMETRY */
-    .params { display: flex; gap: 15px; font-size: 13px; color: #666; margin-bottom: 15px; }
+    .params-grid {
+        display: flex; gap: 15px; margin-bottom: 16px;
+        padding-bottom: 16px; border-bottom: 1px solid #f3f4f6;
+    }
+    .param-item { font-size: 13px; color: #6b7280; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+
+    /* AI OPIS */
+    .ai-box {
+        background-color: #eff6ff; border-radius: 8px; padding: 12px;
+        margin-bottom: 16px; font-size: 12px; color: #1e40af; line-height: 1.5;
+    }
 
     /* PRZYCISK */
-    a.offer-btn {
+    a.btn-link {
         display: block; width: 100%; text-align: center;
-        background-color: #0078ff; color: white !important;
-        padding: 10px; border-radius: 6px; text-decoration: none; font-weight: bold;
-        transition: background 0.2s;
+        background-color: #111827; color: white !important;
+        padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;
+        margin-top: auto; transition: background 0.2s;
     }
-    a.offer-btn:hover { background-color: #005bb5; }
+    a.btn-link:hover { background-color: #2563eb; }
 
+    /* HISTORIA */
+    .history-section {
+        margin-top: 15px; font-size: 11px; color: #9ca3af;
+    }
+    .history-row { display: flex; justify-content: space-between; margin-top: 4px; }
+    
     /* Ukrycie menu */
-    #MainMenu {visibility: hidden;} footer {visibility: hidden;}
+    #MainMenu {visibility: hidden;} footer {visibility: hidden;} header {visibility: hidden;}
     .block-container { padding-top: 2rem; }
 </style>
 """, unsafe_allow_html=True)
@@ -93,58 +99,66 @@ LINKS = [
     "https://www.otodom.pl/pl/oferta/5-pokoi-szereg-ogrodek-stacja-pkp-wroclaw-ID4yBI2"
 ]
 
-# --- 4. FUNKCJA GENERUJĄCA OPIS AI (SYMULACJA) ---
-def generate_ai_description(title, price, area, rooms):
-    if area == 0: return "🤖 AI: Brak danych do analizy."
-    
-    price_per_m = price / area if area > 0 else 0
-    desc = "🤖 **AI Podsumowanie:** "
-    
-    if rooms == 1: desc += "Kompaktowa kawalerka, "
-    elif rooms == 2: desc += "Funkcjonalne 2 pokoje, "
-    elif rooms > 3: desc += "Przestronny apartament dla rodziny, "
-    else: desc += "Mieszkanie, "
-    
-    desc += f"oferujące {area} m². "
-    
-    if price_per_m > 15000: desc += "Nieruchomość w standardzie premium. "
-    elif price_per_m < 9000: desc += "Atrakcyjna cena za metr kwadratowy! "
-    
-    desc += "Idealne pod inwestycję lub do zamieszkania."
-    return desc
-
-# --- 5. OBSŁUGA PLIKU HISTORII ---
+# --- 4. SYSTEM HISTORII ---
 HISTORY_FILE = 'historia_cen.csv'
 
-def load_history():
-    if os.path.exists(HISTORY_FILE):
-        return pd.read_csv(HISTORY_FILE)
-    return pd.DataFrame(columns=["Data", "Link", "Cena"])
+def init_history():
+    if not os.path.exists(HISTORY_FILE):
+        df = pd.DataFrame(columns=["Data", "Link", "Cena"])
+        df.to_csv(HISTORY_FILE, index=False)
 
-def save_to_history(link, price):
-    df = load_history()
+def save_price(link, price):
+    if price == 0: return
+    init_history()
+    df = pd.read_csv(HISTORY_FILE)
     today = datetime.now().strftime("%Y-%m-%d")
     
-    # Sprawdzamy czy wpis z dzisiaj już jest
-    check = df[(df['Link'] == link) & (df['Data'] == today)]
+    # Sprawdzamy czy już dziś zapisaliśmy tę cenę dla tego linku
+    exists = df[(df['Link'] == link) & (df['Data'] == today)]
     
-    if check.empty and price > 0:
+    if exists.empty:
         new_row = pd.DataFrame([{"Data": today, "Link": link, "Cena": price}])
         df = pd.concat([df, new_row], ignore_index=True)
         df.to_csv(HISTORY_FILE, index=False)
 
-def get_price_history_for_link(link):
-    df = load_history()
-    if df.empty: return []
-    history = df[df['Link'] == link].sort_values(by="Data", ascending=False).head(3) # Ostatnie 3 wpisy
-    return history.to_dict('records')
+def get_history_html(link):
+    init_history()
+    df = pd.read_csv(HISTORY_FILE)
+    
+    # Filtrujemy po linku i sortujemy od najnowszej
+    hist = df[df['Link'] == link].sort_values(by="Data", ascending=False).head(5)
+    
+    if hist.empty:
+        return "<div class='history-row'>Brak historii</div>"
+    
+    html = ""
+    for _, row in hist.iterrows():
+        cena_fmt = f"{row['Cena']:,.0f} zł".replace(",", " ")
+        html += f"<div class='history-row'><span>📅 {row['Data']}</span> <span><b>{cena_fmt}</b></span></div>"
+    return html
+
+# --- 5. AI OPIS GENERATOR ---
+def generate_ai_text(title, price, area, rooms):
+    if area == 0: return "Analiza danych niedostępna."
+    
+    sqm_price = price / area
+    desc = f"✨ **Analiza:** Mieszkanie {rooms}-pokojowe ({area} m²). "
+    
+    if sqm_price > 14000: desc += "Standard Premium/Centrum. "
+    elif sqm_price < 9000: desc += "Okazja cenowa (poniżej średniej). "
+    else: desc += "Cena rynkowa standardowa. "
+    
+    if rooms == 1: desc += "Idealne na start."
+    elif rooms >= 4: desc += "Duży potencjał dla rodziny."
+    
+    return desc
 
 # --- 6. SCRAPER ---
 def get_data(url):
-    headers = {"User-Agent": "Mozilla/5.0"}
-    data_out = {
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    data = {
         "title": "Wczytywanie...", "price": 0, "price_str": "---", 
-        "area": 0, "rooms": 0, "img": "https://via.placeholder.com/600x400?text=Brak", 
+        "area": 0, "rooms": 0, "img": "https://via.placeholder.com/600x400?text=Brak+Zdjecia", 
         "link": url
     }
     
@@ -153,110 +167,81 @@ def get_data(url):
         if r.status_code == 200:
             soup = BeautifulSoup(r.content, "html.parser")
             
-            # 1. Tytuł - Próba pobrania czystego tekstu z H1
+            # Tytuł (czyszczenie Base64 i H1)
             h1 = soup.find("h1", attrs={"data-cy": "adPageAdTitle"})
-            if h1:
-                data_out["title"] = h1.get_text().strip()
-            else:
-                # Jeśli H1 nie działa, sprawdzamy czy tytuł nie jest zakodowany Base64
-                # (To naprawia ten problem z "Tm93...")
-                raw_title = soup.title.string if soup.title else ""
-                if " " not in raw_title and len(raw_title) > 20:
-                    try:
-                        decoded = base64.b64decode(raw_title).decode('utf-8')
-                        data_out["title"] = decoded
-                    except:
-                        data_out["title"] = "Oferta Otodom"
+            if h1: data["title"] = h1.get_text().strip()
             
-            # 2. JSON
+            # JSON Data
             script = soup.find("script", id="__NEXT_DATA__")
             if script:
                 j = json.loads(script.string)
                 target = j['props']['pageProps']['ad']['target']
                 
-                data_out["price"] = float(target.get('Price', 0))
-                data_out["price_str"] = f"{data_out['price']:,.0f} zł".replace(",", " ")
-                data_out["area"] = float(target.get('Area', 0))
+                data["price"] = float(target.get('Price', 0))
+                data["price_str"] = f"{data['price']:,.0f} zł".replace(",", " ")
+                data["area"] = float(target.get('Area', 0))
                 
                 rooms = target.get('Rooms_num', [0])
-                if isinstance(rooms, list): data_out["rooms"] = int(rooms[0])
+                if isinstance(rooms, list): data["rooms"] = int(rooms[0])
                 
                 imgs = j['props']['pageProps']['ad']['images']
-                if imgs: data_out["img"] = imgs[0].get('medium')
+                if imgs: data["img"] = imgs[0].get('medium')
                 
-                # Zapisz do historii
-                save_to_history(url, data_out["price"])
-                
-    except Exception as e:
-        print(e)
-        
-    return data_out
+                # Zapisujemy do historii
+                save_price(url, data["price"])
+    except: pass
+    return data
 
-# --- 7. INTERFEJS ---
-st.title("🏠 Twoje Centrum Nieruchomości")
+# --- 7. INTERFEJS GŁÓWNY ---
+st.title("Estate Monitor PRO")
+st.markdown("### 📊 Panel Inwestycyjny")
 
-if st.button("🔄 AKTUALIZUJ CENY I HISTORIĘ"):
-    
-    # Progress bar
+if st.button("🔄 POBIERZ AKTUALNE CENY"):
+    st.divider()
     bar = st.progress(0)
-    
-    # Grid 3 kolumny
-    cols = st.columns(3)
+    cols = st.columns(3) # Grid 3 kolumny
     
     for i, link in enumerate(LINKS):
         bar.progress((i + 1) / len(LINKS))
-        
-        # Pobierz dane
         d = get_data(link)
+        ai_desc = generate_ai_text(d['title'], d['price'], d['area'], d['rooms'])
+        history_html = get_history_html(link)
         
-        # Generuj AI opis
-        ai_text = generate_ai_description(d['title'], d['price'], d['area'], d['rooms'])
-        
-        # Pobierz historię
-        hist = get_price_history_for_link(link)
-        hist_html = ""
-        for h in hist:
-            hist_html += f"<div>📅 {h['Data']}: <b>{h['Cena']:,.0f} zł</b></div>"
-        
-        # Renderuj kartę (Bezpieczny HTML)
+        # Renderowanie karty (Fix HTML)
         with cols[i % 3]:
             st.markdown(f"""
             <div class="property-card">
-                <div class="card-top">
+                <div class="card-img-container">
                     <div class="badge">NA SPRZEDAŻ</div>
                     <img src="{d['img']}" class="card-img">
                 </div>
                 <div class="card-content">
-                    <div class="price-row">
-                        <div class="price">{d['price_str']}</div>
-                    </div>
+                    <div class="price">{d['price_str']}</div>
                     <div class="title">{d['title']}</div>
                     
-                    <div class="params">
-                        <span>📏 {d['area']} m²</span>
-                        <span>🚪 {d['rooms']} pok.</span>
+                    <div class="params-grid">
+                        <div class="param-item">📏 {d['area']} m²</div>
+                        <div class="param-item">🚪 {d['rooms']} pok.</div>
                     </div>
-
-                    <div class="ai-desc-box">
-                        {ai_text}
-                    </div>
-
-                    <a href="{d['link']}" target="_blank" class="offer-btn">ZOBACZ OFERTĘ</a>
-
-                    <div class="history-box">
-                        <strong>📜 Historia cen:</strong>
-                        {hist_html if hist_html else "Brak historii (pierwsze sprawdzenie)"}
+                    
+                    <div class="ai-box">{ai_desc}</div>
+                    
+                    <a href="{d['link']}" target="_blank" class="btn-link">ZOBACZ OFERTĘ</a>
+                    
+                    <div class="history-section">
+                        <strong>📜 Ostatnie odczyty cen:</strong>
+                        {history_html}
                     </div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
             
     bar.empty()
-    st.success("Dane zaktualizowane!")
+    
+    # Przycisk pobierania historii
+    if os.path.exists(HISTORY_FILE):
+        with open(HISTORY_FILE, "rb") as f:
+            st.download_button("💾 Pobierz historię (CSV)", f, "historia_cen.csv")
+            
 else:
-    st.info("Kliknij przycisk powyżej, aby pobrać najnowsze dane i zapisać historię.")
-
-# Pokaż link do pobrania pliku historii
-if os.path.exists(HISTORY_FILE):
-    with open(HISTORY_FILE, "rb") as f:
-        st.download_button("💾 Pobierz pełną historię (Excel/CSV)", f, file_name="historia_cen.csv")
+    st.info("Kliknij przycisk powyżej, aby zeskanować rynek.")
