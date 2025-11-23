@@ -7,7 +7,7 @@ import time
 # --- 1. KONFIGURACJA STRONY ---
 st.set_page_config(page_title="Wrocław Estate Center", page_icon="🏙️", layout="wide")
 
-# --- 2. STYLIZACJA CSS (WYGLĄD + NIEZNISZCZALNY HARRY) ---
+# --- 2. STYLIZACJA CSS ---
 st.markdown("""
 <style>
     /* Tło aplikacji */
@@ -16,23 +16,22 @@ st.markdown("""
         color: white;
     }
     
-    /* ANIMACJA LOTU */
+    /* ANIMACJA LOTU (POPRAWIONA) */
     @keyframes patrol-flight {
-        0% { left: -150px; bottom: 50px; transform: scaleX(1) rotate(0deg); }
-        25% { left: 40%; bottom: 150px; transform: scaleX(1) rotate(-10deg); }
-        50% { left: 110%; bottom: 300px; transform: scaleX(1) rotate(-20deg); } /* Wylot w prawo */
-        51% { left: 110%; bottom: 300px; transform: scaleX(-1) rotate(20deg); } /* Nawrotka (niewidoczna) */
-        75% { left: 50%; bottom: 100px; transform: scaleX(-1) rotate(10deg); }
-        100% { left: -150px; bottom: 20px; transform: scaleX(-1) rotate(0deg); } /* Powrót w lewo */
+        0% { left: -150px; bottom: 50px; transform: scaleX(1); }           /* Start z lewej */
+        45% { left: 110%; bottom: 300px; transform: scaleX(1); }          /* Wylot w prawo */
+        50% { left: 110%; bottom: 300px; transform: scaleX(-1); }         /* Obrót w miejscu (poza ekranem) */
+        55% { left: 110%; bottom: 100px; transform: scaleX(-1); }         /* Obniżenie pułapu */
+        100% { left: -150px; bottom: 20px; transform: scaleX(-1); }       /* Powrót w lewo */
     }
 
     .harry-potter {
         position: fixed;
-        z-index: 2147483647; /* Maksymalna warstwa - zawsze na wierzchu */
-        width: 120px; /* Rozmiar */
-        animation: patrol-flight 20s linear infinite; /* Czas przelotu */
-        pointer-events: none; /* Kliknięcia przez niego przechodzą */
-        filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0.6)); /* Magiczna poświata */
+        z-index: 99999;
+        width: 120px; /* Rozmiar postaci */
+        animation: patrol-flight 25s linear infinite; /* Czas przelotu */
+        pointer-events: none; /* Kliknięcia przechodzą przez niego */
+        filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.4)); /* Magiczna poświata */
     }
 
     /* Stylizacja Zakładek */
@@ -70,9 +69,10 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. WSTAWIENIE HARRY'EGO (PEWNY LINK ICONS8) ---
+# --- 3. WSTAWIENIE HARRY'EGO (LINK Z GITHUB RAW - NIEZAWODNY) ---
+# Używamy grafiki z otwartego repozytorium Microsoft Fluent Emoji
 st.markdown("""
-<img src="https://img.icons8.com/external-flaticons-lineal-color-flat-icons/128/external-wizard-fairy-tales-flaticons-lineal-color-flat-icons-2.png" class="harry-potter">
+<img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Mage.png" class="harry-potter">
 """, unsafe_allow_html=True)
 
 
