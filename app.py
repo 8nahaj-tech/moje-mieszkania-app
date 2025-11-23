@@ -3,72 +3,89 @@ import requests
 from bs4 import BeautifulSoup
 import json
 import time
-import pandas as pd
 
-# --- 1. KONFIGURACJA STRONY (Musi być na samej górze) ---
-st.set_page_config(page_title="Pro Estate Monitor", page_icon="🏢", layout="wide")
+# --- 1. KONFIGURACJA PRO (Ciemny motyw i układ) ---
+st.set_page_config(page_title="Invest Monitor PRO", page_icon="🏢", layout="wide")
 
-# --- 2. STYLIZACJA CSS (To tutaj dzieje się magia wyglądu) ---
+# --- 2. STYLIZACJA CSS (Dark Mode + Profesjonalny wygląd) ---
 st.markdown("""
 <style>
-    /* Tło całej aplikacji - profesjonalny ciemny gradient */
+    /* Główne tło - elegancki ciemny granat */
     .stApp {
-        background: linear-gradient(to bottom right, #0f2027, #203a43, #2c5364);
-        color: white;
+        background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+        color: #ffffff;
     }
     
-    /* Stylizacja przycisku głównego */
+    /* Pasek postępu */
+    .stProgress > div > div > div > div {
+        background-color: #00d2ff;
+    }
+
+    /* Przycisk Główny */
     div.stButton > button {
         width: 100%;
-        background-color: #00d2ff; 
-        color: #000000;
-        font-weight: bold;
+        background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
         border: none;
-        padding: 15px;
-        font-size: 18px;
-        transition: 0.3s;
-        border-radius: 10px;
+        color: white;
+        padding: 16px;
+        font-size: 20px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 210, 255, 0.4);
+        transition: transform 0.2s;
     }
     div.stButton > button:hover {
-        background-color: #3a7bd5;
-        color: white;
-    }
-
-    /* Stylizacja linku jako guzika */
-    a.custom-button {
-        display: inline-block;
-        padding: 10px 20px;
-        background-color: #FF416C;
-        color: white !important;
-        text-decoration: none;
-        border-radius: 5px;
-        font-weight: bold;
-        margin-top: 10px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-    a.custom-button:hover {
-        background-color: #FF4B2B;
-    }
-
-    /* Wygląd ceny */
-    .price-tag {
-        font-size: 32px;
-        font-weight: 800;
-        color: #00d2ff; /* Jasny błękit */
-        margin-bottom: 5px;
+        transform: scale(1.02);
     }
     
-    /* Wygląd tytułu */
-    .offer-title {
-        font-size: 20px;
-        font-weight: 600;
-        margin-bottom: 5px;
-        color: #f0f0f0;
+    /* Karta Oferty (Ramka) */
+    .offer-card {
+        background-color: rgba(255, 255, 255, 0.1); /* Półprzezroczyste tło */
+        padding: 20px;
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        margin-bottom: 20px;
     }
 
-    /* Ramka wokół zdjęcia */
+    /* Tytuł oferty */
+    .offer-title {
+        font-size: 22px;
+        font-weight: 600;
+        color: #ffffff;
+        margin-bottom: 10px;
+        line-height: 1.4;
+    }
+
+    /* Cena */
+    .price-tag {
+        font-size: 36px;
+        font-weight: 800;
+        color: #00d2ff;
+        text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+        margin-bottom: 15px;
+    }
+
+    /* Przycisk linku */
+    a.link-btn {
+        display: inline-block;
+        background-color: #ff416c;
+        color: white !important;
+        padding: 10px 25px;
+        border-radius: 50px;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 14px;
+        box-shadow: 0 4px 10px rgba(255, 65, 108, 0.4);
+    }
+    a.link-btn:hover {
+        background-color: #ff4b2b;
+    }
+
+    /* Zdjęcie */
     img {
-        border-radius: 12px;
+        border-radius: 10px;
         box-shadow: 0 5px 15px rgba(0,0,0,0.5);
     }
 </style>
@@ -90,9 +107,9 @@ def get_offer_data(url):
     }
     
     offer_data = {
-        "title": "Nieznana oferta",
+        "title": "Ładowanie tytułu...",
         "price_str": "Brak ceny",
-        "image_url": "https://via.placeholder.com/400x300?text=Brak+Zdjecia", # Zaślepka jak nie ma fotki
+        "image_url": "https://via.placeholder.com/600x400?text=Brak+Zdjecia",
         "link": url
     }
 
@@ -100,69 +117,77 @@ def get_offer_data(url):
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, "html.parser")
-            script_data = soup.find("script", id="__NEXT_DATA__")
             
+            # --- POPRAWKA: POBIERANIE TYTUŁU ---
+            # 1. Szukamy głównego nagłówka H1 (to co widzi człowiek na stronie)
+            h1_tag = soup.find("h1", attrs={"data-cy": "adPageAdTitle"})
+            
+            if h1_tag:
+                # Jeśli jest H1, bierzemy z niego czysty tekst
+                offer_data["title"] = h1_tag.get_text().strip()
+            else:
+                # Fallback: Tytuł karty przeglądarki
+                if soup.title:
+                    offer_data["title"] = soup.title.string.replace(" - Otodom", "").strip()
+
+            # --- POBIERANIE CENY I ZDJĘCIA (Z JSONa bo tam łatwiej) ---
+            script_data = soup.find("script", id="__NEXT_DATA__")
             if script_data:
-                data = json.loads(script_data.string)
-                ad_target = data['props']['pageProps']['ad']['target']
-                
-                # Tytuł i Cena
-                offer_data["title"] = ad_target.get('Title', 'Tytuł niedostępny')
-                raw_price = ad_target.get('Price', 0)
-                
-                if isinstance(raw_price, (int, float)):
-                    offer_data["price_str"] = f"{raw_price:,.0f} zł".replace(",", " ")
-                
-                # Zdjęcie
                 try:
+                    data = json.loads(script_data.string)
+                    ad_target = data['props']['pageProps']['ad']['target']
+                    
+                    # Cena
+                    raw_price = ad_target.get('Price', 0)
+                    if isinstance(raw_price, (int, float)):
+                        offer_data["price_str"] = f"{raw_price:,.0f} zł".replace(",", " ")
+                    
+                    # Zdjęcie
                     images = data['props']['pageProps']['ad']['images']
                     if images and len(images) > 0:
                         offer_data["image_url"] = images[0].get('medium') or images[0].get('large')
                 except:
                     pass
     except:
-        pass
+        offer_data["title"] = "Błąd połączenia z ofertą"
         
     return offer_data
 
-# --- 5. GŁÓWNY INTERFEJS ---
+# --- 5. INTERFEJS ---
+st.title("🏢 Invest Monitor PRO")
+st.markdown("Poniżej znajdziesz aktualny status obserwowanych nieruchomości.")
 
-st.title("🏢 Pro Estate Monitor")
-st.markdown("### 🔍 Panel śledzenia inwestycji")
-st.write("Kliknij przycisk poniżej, aby zeskanować rynek.")
-
-if st.button("🚀 SKANUJ OFERTY (START)"):
+if st.button("🚀 SKANUJ RYNEK"):
     
-    st.divider()
+    st.write("") # Odstęp
     progress_bar = st.progress(0)
     
     for i, link in enumerate(LINKS):
-        # Pobieranie danych
+        # Pobieramy dane
         data = get_offer_data(link)
         progress_bar.progress((i + 1) / len(LINKS))
         
-        # --- UKŁAD WYŚWIETLANIA (KARTA) ---
-        with st.container():
-            col1, col2 = st.columns([1, 2], gap="large")
-            
-            # Kolumna ze zdjęciem
-            with col1:
-                st.image(data["image_url"], use_container_width=True)
-            
-            # Kolumna z tekstem (używamy HTML dla ładnego wyglądu)
-            with col2:
-                st.markdown(f"""
-                <div class="offer-title">{data['title']}</div>
-                <div class="price-tag">{data['price_str']}</div>
-                <br>
-                <a href="{data['link']}" target="_blank" class="custom-button">👉 Zobacz ofertę na Otodom</a>
-                """, unsafe_allow_html=True)
+        # Wyświetlamy kartę w HTML
+        st.markdown(f"""
+        <div class="offer-card">
+            <div style="display: flex; flex-wrap: wrap; gap: 20px;">
+                <div style="flex: 1; min-width: 300px;">
+                    <img src="{data['image_url']}" style="width: 100%; height: auto; object-fit: cover;">
+                </div>
+                <div style="flex: 2; min-width: 300px;">
+                    <div class="offer-title">{data['title']}</div>
+                    <div class="price-tag">{data['price_str']}</div>
+                    <div style="margin-top: 20px;">
+                        <a href="{data['link']}" target="_blank" class="link-btn">👉 ZOBACZ NA OTODOM</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
         
-        st.divider() # Linia oddzielająca
         time.sleep(0.5)
 
     progress_bar.empty()
-    st.success("✅ Skanowanie zakończone pomyślnie.")
 
 else:
-    st.info("Oczekiwanie na uruchomienie skanera...")
+    st.info("System gotowy. Kliknij przycisk powyżej.")
