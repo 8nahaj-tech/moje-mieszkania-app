@@ -7,7 +7,7 @@ import time
 # --- 1. KONFIGURACJA STRONY ---
 st.set_page_config(page_title="Wrocław Estate Center", page_icon="🏙️", layout="wide")
 
-# --- 2. STYLIZACJA CSS (WYGLĄD + HARRY POTTER) ---
+# --- 2. STYLIZACJA CSS (WYGLĄD + LATAJĄCY HARRY) ---
 st.markdown("""
 <style>
     /* Tło aplikacji */
@@ -18,21 +18,21 @@ st.markdown("""
     
     /* ANIMACJA HARRY'EGO NA MIOTLE */
     @keyframes fly-harry {
-        0% { left: -300px; top: 80%; transform: scaleX(1); }    /* Start z lewej */
-        40% { left: 110%; top: 20%; transform: scaleX(1); }     /* Wylatuje w prawo i do góry */
-        50% { left: 110%; top: 30%; transform: scaleX(-1); }    /* Obraca się */
-        90% { left: -300px; top: 70%; transform: scaleX(-1); }  /* Wraca w lewo i w dół */
-        100% { left: -300px; top: 80%; transform: scaleX(1); }
+        0% { left: -200px; top: 85%; transform: scaleX(1); }     /* Start z lewej na dole */
+        30% { left: 50%; top: 20%; transform: scaleX(1); }       /* Wznosi się do środka */
+        60% { left: 110%; top: 40%; transform: scaleX(1); }      /* Wylatuje w prawo */
+        61% { left: 110%; top: 40%; transform: scaleX(-1); }     /* Wraca (obrót) - poza ekranem */
+        80% { left: 50%; top: 70%; transform: scaleX(-1); }      /* Wraca dołem */
+        100% { left: -200px; top: 85%; transform: scaleX(-1); }  /* Ląduje po lewej */
     }
 
     .harry-potter {
         position: fixed;
-        z-index: 99999; /* Bardzo wysoki indeks, żeby był NA WIERZCHU */
-        width: 120px; /* Wielkość postaci */
-        animation: fly-harry 15s linear infinite; /* Czas przelotu */
+        z-index: 99999;
+        width: 100px; /* Wielkość postaci */
+        animation: fly-harry 20s linear infinite; /* Czas przelotu */
         pointer-events: none; /* Kliknięcia przechodzą przez niego */
-        border-radius: 0 !important; /* Bez zaokrąglonych rogów dla postaci */
-        box-shadow: none !important; /* Bez cienia pod postacią */
+        filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); /* Lekka poświata magiczna */
     }
 
     /* Stylizacja Zakładek */
@@ -66,18 +66,18 @@ st.markdown("""
     }
     a.link-btn:hover { background-color: #ff4b2b; transform: scale(1.05); }
     
-    /* Zdjęcia ofert mają ramki, ale Harry nie */
-    .offer-img { border-radius: 10px; object-fit: cover; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+    img { border-radius: 10px; object-fit: cover; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. WSTAWIENIE HARRY'EGO (LINK Z GIPHY) ---
+# --- 3. WSTAWIENIE HARRY'EGO (STABILNY LINK TENOR) ---
+# Używam sprawdzonego linku z Tenor (bezpośredni GIF)
 st.markdown("""
-<img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExbm95YXk4a2g0Y2M2d242aW85aGk5aGk5aGk5aGk5aGk5aSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/hH5xZ0b7yD6n6/giphy.gif" class="harry-potter">
+<img src="https://media.tenor.com/On7kVXwnmqEAAAAi/harry-potter-flying.gif" class="harry-potter">
 """, unsafe_allow_html=True)
 
 
-# --- 4. LISTY TWOICH LINKÓW ---
+# --- 4. LISTY LINKÓW ---
 LINKS_MOJE = [
     "https://www.otodom.pl/pl/oferta/nowe-wykonczone-2-pok-ogrod-blisko-uczelni-ID4yZO0",
     "https://www.otodom.pl/pl/oferta/piekne-mieszkanie-dwupoziomowe-4-pokojowe-z-balkon-ID4z2b8"
@@ -94,7 +94,7 @@ LINKS_DOMY = [
 ]
 
 
-# --- 5. FUNKCJE PROGRAMU ---
+# --- 5. FUNKCJE ---
 def get_offer_data(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
@@ -106,22 +106,16 @@ def get_offer_data(url):
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, "html.parser")
-            
-            # 1. Pobieranie tytułu (H1)
             h1_tag = soup.find("h1", attrs={"data-cy": "adPageAdTitle"})
             if h1_tag: offer_data["title"] = h1_tag.get_text().strip()
-            
-            # 2. Pobieranie JSON (Cena i Zdjęcie)
             script_data = soup.find("script", id="__NEXT_DATA__")
             if script_data:
                 try:
                     data = json.loads(script_data.string)
                     ad_target = data['props']['pageProps']['ad']['target']
-                    
                     raw_price = ad_target.get('Price', 0)
                     if isinstance(raw_price, (int, float)): 
                         offer_data["price_str"] = f"{raw_price:,.0f} zł".replace(",", " ")
-                    
                     images = data['props']['pageProps']['ad']['images']
                     if images: 
                         offer_data["image_url"] = images[0].get('medium') or images[0].get('large')
@@ -141,12 +135,11 @@ def render_tab(links_list, tab_name):
             data = get_offer_data(link)
             progress_bar.progress((i + 1) / len(links_list))
             
-            # Wyświetlenie karty
             st.markdown(f"""
             <div class="offer-card">
                 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
                     <div style="flex: 1; min-width: 250px;">
-                        <img src="{data['image_url']}" class="offer-img" style="width: 100%; height: 200px;">
+                        <img src="{data['image_url']}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px;">
                     </div>
                     <div style="flex: 2; min-width: 250px;">
                         <div class="offer-title">{data['title']}</div>
@@ -159,30 +152,25 @@ def render_tab(links_list, tab_name):
             </div>
             """, unsafe_allow_html=True)
             time.sleep(0.3)
-            
         progress_bar.empty()
     else:
         st.write(f"Ofert do sprawdzenia: **{len(links_list)}**")
 
-# --- 6. GŁÓWNY WIDOK ---
+# --- 6. GŁÓWNY EKRAN ---
 st.title("🏙️ Wrocław Estate Center")
 
-# Zakładki
 tab1, tab2, tab3, tab4 = st.tabs(["⭐ MOJE WYBRANE", "🏢 MIESZKANIA", "🛋️ KAWALERKI", "🏡 DOMY"])
 
 with tab1:
     st.header("Moje Ulubione")
     render_tab(LINKS_MOJE, "moje")
-
 with tab2:
     st.header("Mieszkania Wrocław")
     st.markdown("[🔍 Szukaj na Otodom](https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/dolnoslaskie/wroclaw/wroclaw/wroclaw?viewType=listing)")
     render_tab(LINKS_MIESZKANIA, "mieszkania")
-
 with tab3:
     st.header("Kawalerki")
     render_tab(LINKS_KAWALERKI, "kawalerki")
-
 with tab4:
     st.header("Domy")
     render_tab(LINKS_DOMY, "domy")
