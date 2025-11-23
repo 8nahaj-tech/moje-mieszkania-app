@@ -7,7 +7,7 @@ import time
 # --- 1. KONFIGURACJA STRONY ---
 st.set_page_config(page_title="Wrocław Estate Center", page_icon="🏙️", layout="wide")
 
-# --- 2. STYLIZACJA CSS (WYGLĄD + LATAJĄCY HARRY) ---
+# --- 2. STYLIZACJA CSS (WYGLĄD + NIEZNISZCZALNY HARRY) ---
 st.markdown("""
 <style>
     /* Tło aplikacji */
@@ -16,23 +16,23 @@ st.markdown("""
         color: white;
     }
     
-    /* ANIMACJA HARRY'EGO NA MIOTLE */
-    @keyframes fly-harry {
-        0% { left: -200px; top: 85%; transform: scaleX(1); }     /* Start z lewej na dole */
-        30% { left: 50%; top: 20%; transform: scaleX(1); }       /* Wznosi się do środka */
-        60% { left: 110%; top: 40%; transform: scaleX(1); }      /* Wylatuje w prawo */
-        61% { left: 110%; top: 40%; transform: scaleX(-1); }     /* Wraca (obrót) - poza ekranem */
-        80% { left: 50%; top: 70%; transform: scaleX(-1); }      /* Wraca dołem */
-        100% { left: -200px; top: 85%; transform: scaleX(-1); }  /* Ląduje po lewej */
+    /* ANIMACJA LOTU */
+    @keyframes patrol-flight {
+        0% { left: -150px; bottom: 50px; transform: scaleX(1) rotate(0deg); }
+        25% { left: 40%; bottom: 150px; transform: scaleX(1) rotate(-10deg); }
+        50% { left: 110%; bottom: 300px; transform: scaleX(1) rotate(-20deg); } /* Wylot w prawo */
+        51% { left: 110%; bottom: 300px; transform: scaleX(-1) rotate(20deg); } /* Nawrotka (niewidoczna) */
+        75% { left: 50%; bottom: 100px; transform: scaleX(-1) rotate(10deg); }
+        100% { left: -150px; bottom: 20px; transform: scaleX(-1) rotate(0deg); } /* Powrót w lewo */
     }
 
     .harry-potter {
         position: fixed;
-        z-index: 99999;
-        width: 100px; /* Wielkość postaci */
-        animation: fly-harry 20s linear infinite; /* Czas przelotu */
-        pointer-events: none; /* Kliknięcia przechodzą przez niego */
-        filter: drop-shadow(0 0 10px rgba(255,255,255,0.3)); /* Lekka poświata magiczna */
+        z-index: 2147483647; /* Maksymalna warstwa - zawsze na wierzchu */
+        width: 120px; /* Rozmiar */
+        animation: patrol-flight 20s linear infinite; /* Czas przelotu */
+        pointer-events: none; /* Kliknięcia przez niego przechodzą */
+        filter: drop-shadow(0 0 15px rgba(0, 210, 255, 0.6)); /* Magiczna poświata */
     }
 
     /* Stylizacja Zakładek */
@@ -66,18 +66,17 @@ st.markdown("""
     }
     a.link-btn:hover { background-color: #ff4b2b; transform: scale(1.05); }
     
-    img { border-radius: 10px; object-fit: cover; }
+    img.offer-img { border-radius: 10px; object-fit: cover; width:100%; height:200px; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. WSTAWIENIE HARRY'EGO (STABILNY LINK TENOR) ---
-# Używam sprawdzonego linku z Tenor (bezpośredni GIF)
+# --- 3. WSTAWIENIE HARRY'EGO (PEWNY LINK ICONS8) ---
 st.markdown("""
-<img src="https://media.tenor.com/On7kVXwnmqEAAAAi/harry-potter-flying.gif" class="harry-potter">
+<img src="https://img.icons8.com/external-flaticons-lineal-color-flat-icons/128/external-wizard-fairy-tales-flaticons-lineal-color-flat-icons-2.png" class="harry-potter">
 """, unsafe_allow_html=True)
 
 
-# --- 4. LISTY LINKÓW ---
+# --- 4. BAZA DANYCH ---
 LINKS_MOJE = [
     "https://www.otodom.pl/pl/oferta/nowe-wykonczone-2-pok-ogrod-blisko-uczelni-ID4yZO0",
     "https://www.otodom.pl/pl/oferta/piekne-mieszkanie-dwupoziomowe-4-pokojowe-z-balkon-ID4z2b8"
@@ -139,7 +138,7 @@ def render_tab(links_list, tab_name):
             <div class="offer-card">
                 <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
                     <div style="flex: 1; min-width: 250px;">
-                        <img src="{data['image_url']}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 10px;">
+                        <img src="{data['image_url']}" class="offer-img">
                     </div>
                     <div style="flex: 2; min-width: 250px;">
                         <div class="offer-title">{data['title']}</div>
@@ -156,7 +155,7 @@ def render_tab(links_list, tab_name):
     else:
         st.write(f"Ofert do sprawdzenia: **{len(links_list)}**")
 
-# --- 6. GŁÓWNY EKRAN ---
+# --- 6. GŁÓWNY INTERFEJS ---
 st.title("🏙️ Wrocław Estate Center")
 
 tab1, tab2, tab3, tab4 = st.tabs(["⭐ MOJE WYBRANE", "🏢 MIESZKANIA", "🛋️ KAWALERKI", "🏡 DOMY"])
