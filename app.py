@@ -4,21 +4,77 @@ from bs4 import BeautifulSoup
 import json
 import time
 import pandas as pd
-import datetime
 
-# --- KONFIGURACJA STRONY ---
-st.set_page_config(page_title="Monitor Cen Mieszkań", page_icon="🏢", layout="wide")
+# --- 1. KONFIGURACJA STRONY (Musi być na samej górze) ---
+st.set_page_config(page_title="Pro Estate Monitor", page_icon="🏢", layout="wide")
 
-# Stylizacja CSS (wygląd)
+# --- 2. STYLIZACJA CSS (To tutaj dzieje się magia wyglądu) ---
 st.markdown("""
 <style>
-    .big-font { font-size:20px !important; font-weight: bold; }
-    div.stButton > button { width: 100%; background-color: #0078D4; color: white; border-radius: 8px; height: 50px; font-size: 18px;}
-    img { border-radius: 10px; }
+    /* Tło całej aplikacji - profesjonalny ciemny gradient */
+    .stApp {
+        background: linear-gradient(to bottom right, #0f2027, #203a43, #2c5364);
+        color: white;
+    }
+    
+    /* Stylizacja przycisku głównego */
+    div.stButton > button {
+        width: 100%;
+        background-color: #00d2ff; 
+        color: #000000;
+        font-weight: bold;
+        border: none;
+        padding: 15px;
+        font-size: 18px;
+        transition: 0.3s;
+        border-radius: 10px;
+    }
+    div.stButton > button:hover {
+        background-color: #3a7bd5;
+        color: white;
+    }
+
+    /* Stylizacja linku jako guzika */
+    a.custom-button {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #FF416C;
+        color: white !important;
+        text-decoration: none;
+        border-radius: 5px;
+        font-weight: bold;
+        margin-top: 10px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    a.custom-button:hover {
+        background-color: #FF4B2B;
+    }
+
+    /* Wygląd ceny */
+    .price-tag {
+        font-size: 32px;
+        font-weight: 800;
+        color: #00d2ff; /* Jasny błękit */
+        margin-bottom: 5px;
+    }
+    
+    /* Wygląd tytułu */
+    .offer-title {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #f0f0f0;
+    }
+
+    /* Ramka wokół zdjęcia */
+    img {
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- TWOJE LINKI ---
+# --- 3. TWOJE LINKI ---
 LINKS = [
     "https://www.otodom.pl/pl/oferta/nowe-wykonczone-2-pok-ogrod-blisko-uczelni-ID4yZO0",
     "https://www.otodom.pl/pl/oferta/piekne-mieszkanie-dwupoziomowe-4-pokojowe-z-balkon-ID4z2b8",
@@ -26,7 +82,7 @@ LINKS = [
     "https://www.otodom.pl/pl/oferta/5-pokoi-szereg-ogrodek-stacja-pkp-wroclaw-ID4yBI2"
 ]
 
-# --- FUNKCJA POBIERAJĄCA DANE ---
+# --- 4. FUNKCJA POBIERAJĄCA DANE ---
 def get_offer_data(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
@@ -35,9 +91,8 @@ def get_offer_data(url):
     
     offer_data = {
         "title": "Nieznana oferta",
-        "price": 0,
-        "price_str": "Brak danych",
-        "image_url": None,
+        "price_str": "Brak ceny",
+        "image_url": "https://via.placeholder.com/400x300?text=Brak+Zdjecia", # Zaślepka jak nie ma fotki
         "link": url
     }
 
@@ -51,78 +106,63 @@ def get_offer_data(url):
                 data = json.loads(script_data.string)
                 ad_target = data['props']['pageProps']['ad']['target']
                 
-                # 1. Tytuł i Cena
-                offer_data["title"] = ad_target.get('Title', 'Brak tytułu')
+                # Tytuł i Cena
+                offer_data["title"] = ad_target.get('Title', 'Tytuł niedostępny')
                 raw_price = ad_target.get('Price', 0)
                 
                 if isinstance(raw_price, (int, float)):
-                    offer_data["price"] = raw_price
                     offer_data["price_str"] = f"{raw_price:,.0f} zł".replace(",", " ")
                 
-                # 2. Zdjęcie (Szukamy pierwszego zdjęcia w galerii)
+                # Zdjęcie
                 try:
                     images = data['props']['pageProps']['ad']['images']
                     if images and len(images) > 0:
-                        # Pobieramy wersję "medium" lub "large"
                         offer_data["image_url"] = images[0].get('medium') or images[0].get('large')
                 except:
                     pass
-                    
     except:
         pass
         
     return offer_data
 
-# --- INTERFEJS APLIKACJI ---
+# --- 5. GŁÓWNY INTERFEJS ---
 
-st.title("🏢 Wizualny Monitor Ofert")
-st.write("Sprawdź aktualne ceny i zobacz zdjęcia mieszkań.")
+st.title("🏢 Pro Estate Monitor")
+st.markdown("### 🔍 Panel śledzenia inwestycji")
+st.write("Kliknij przycisk poniżej, aby zeskanować rynek.")
 
-if st.button("🔄 POBIERZ DANE I ZDJĘCIA"):
+if st.button("🚀 SKANUJ OFERTY (START)"):
     
-    results = []
+    st.divider()
     progress_bar = st.progress(0)
     
     for i, link in enumerate(LINKS):
+        # Pobieranie danych
+        data = get_offer_data(link)
         progress_bar.progress((i + 1) / len(LINKS))
         
-        # Pobieramy wszystkie dane
-        data = get_offer_data(link)
-        results.append(data)
+        # --- UKŁAD WYŚWIETLANIA (KARTA) ---
+        with st.container():
+            col1, col2 = st.columns([1, 2], gap="large")
+            
+            # Kolumna ze zdjęciem
+            with col1:
+                st.image(data["image_url"], use_container_width=True)
+            
+            # Kolumna z tekstem (używamy HTML dla ładnego wyglądu)
+            with col2:
+                st.markdown(f"""
+                <div class="offer-title">{data['title']}</div>
+                <div class="price-tag">{data['price_str']}</div>
+                <br>
+                <a href="{data['link']}" target="_blank" class="custom-button">👉 Zobacz ofertę na Otodom</a>
+                """, unsafe_allow_html=True)
         
-        time.sleep(0.5) 
+        st.divider() # Linia oddzielająca
+        time.sleep(0.5)
 
     progress_bar.empty()
-    
-    # --- WYŚWIETLANIE KAFLI ---
-    st.divider()
-    
-    for item in results:
-        # Tworzymy układ 2 kolumn: [Zdjęcie (1/3)] | [Opis (2/3)]
-        col1, col2 = st.columns([1, 2])
-        
-        with col1:
-            if item["image_url"]:
-                st.image(item["image_url"], use_container_width=True)
-            else:
-                st.warning("Brak zdjęcia")
-        
-        with col2:
-            st.subheader(item["title"])
-            st.metric(label="Cena", value=item["price_str"])
-            st.markdown(f"[🔗 Przejdź do ogłoszenia na Otodom]({item['link']})")
-        
-        st.divider() # Linia oddzielająca oferty
+    st.success("✅ Skanowanie zakończone pomyślnie.")
 
-    # --- POBIERANIE RAPORTU ---
-    # Przygotowanie prostych danych do Excela (bez zdjęć, bo Excel tego nie lubi w CSV)
-    simple_data = [{k: v for k, v in res.items() if k != 'image_url'} for res in results]
-    df = pd.DataFrame(simple_data)
-    
-    csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label="💾 Pobierz tabelę (CSV)",
-        data=csv,
-        file_name='mieszkania_ze_zdjeciami.csv',
-        mime='text/csv',
-    )
+else:
+    st.info("Oczekiwanie na uruchomienie skanera...")
