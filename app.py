@@ -7,90 +7,145 @@ import time
 # --- 1. KONFIGURACJA STRONY ---
 st.set_page_config(page_title="Wrocław Estate Center", page_icon="🏙️", layout="wide")
 
-# --- 2. STYLIZACJA CSS (WYGLĄD + ANIMACJA ASYSTENTA) ---
+# --- 2. STYLIZACJA CSS (GRID OTODOM + ANIMACJE) ---
 st.markdown("""
 <style>
     /* Tło aplikacji */
     .stApp {
-        background: linear-gradient(135deg, #141E30 0%, #243B55 100%);
+        background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
         color: white;
     }
+
+    /* UKŁAD KARTY (Jak na Otodom) */
+    .property-card {
+        background-color: white;
+        border-radius: 12px;
+        overflow: hidden; /* Żeby zdjęcie nie wystawało */
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        margin-bottom: 20px;
+        height: 100%;
+        position: relative;
+    }
     
-    /* --- NOWA ANIMACJA: "LOT PRZEWODNIKA" --- */
+    .property-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+    }
+
+    /* ZDJĘCIE W KARCIE */
+    .card-image-container {
+        position: relative;
+        width: 100%;
+        height: 200px;
+    }
+    
+    .card-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* BADGE "NA SPRZEDAŻ" */
+    .badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background-color: #00d2ff;
+        color: black;
+        padding: 5px 10px;
+        font-size: 10px;
+        font-weight: bold;
+        border-radius: 4px;
+        text-transform: uppercase;
+        z-index: 10;
+    }
+
+    /* TREŚĆ KARTY (Dół) */
+    .card-content {
+        padding: 15px;
+        color: #333; /* Ciemny tekst na białym tle */
+    }
+
+    .card-price {
+        font-size: 24px;
+        font-weight: 800;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+
+    .card-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #666;
+        line-height: 1.4;
+        height: 40px; /* Stała wysokość na 2 linie tekstu */
+        overflow: hidden;
+        margin-bottom: 15px;
+    }
+
+    /* PRZYCISK W KARCIE */
+    a.card-btn {
+        display: block;
+        text-align: center;
+        background-color: #2c3e50;
+        color: white !important;
+        padding: 10px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        font-size: 14px;
+        transition: 0.2s;
+    }
+    a.card-btn:hover {
+        background-color: #00d2ff;
+        color: black !important;
+    }
+
+    /* --- ANIMACJA MAGA-ASYSTENTA --- */
     @keyframes guide-sequence {
-        /* 1. Start: Okolice zakładki "Moje Wybrane" (lewa góra) */
-        0%   { left: 2%;  top: 110px; transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 10px rgba(255,255,255,0.4)); }
-        10%  { left: 2%;  top: 110px; transform: scale(1.1) rotate(5deg); } /* Lekkie uniesienie */
-
-        /* 2. Lot do przycisku "SKANUJ" (środek ekranu) */
-        25%  { left: 45%; top: 230px; transform: scale(1) rotate(10deg); }
-        /* "WSKAZANIE": Powiększenie i złota poświata */
-        35%  { left: 45%; top: 230px; transform: scale(1.4) rotate(0deg); filter: drop-shadow(0 0 35px rgba(255, 215, 0, 1)); }
-        40%  { left: 45%; top: 230px; transform: scale(1) rotate(0deg); }
-
-        /* 3. Lot w dół do obszaru "ofert" */
-        55%  { left: 15%; top: 600px; transform: scale(1) rotate(-10deg); filter: drop-shadow(0 0 10px rgba(255,255,255,0.4)); }
-
-        /* 4. "UŚMIECH I OCZKO" -> Radosny piruet i zielone światło sukcesu */
-        65%  { left: 15%; top: 600px; transform: scale(1.2) rotate(0deg); }
-        70%  { left: 15%; top: 600px; transform: scale(1.3) rotate(360deg); filter: drop-shadow(0 0 30px rgba(50, 255, 50, 1)); } /* OBRÓT! */
-        75%  { left: 15%; top: 600px; transform: scale(1.2) rotate(340deg); }
-        80%  { left: 15%; top: 600px; transform: scale(1.2) rotate(380deg); }
-
-        /* 5. Odlot poza ekran */
+        0%   { left: 2%;  top: 110px; transform: scale(1) rotate(0deg); }
+        25%  { left: 45%; top: 200px; transform: scale(1) rotate(10deg); }
+        35%  { left: 45%; top: 200px; transform: scale(1.4) rotate(0deg); filter: drop-shadow(0 0 35px rgba(255, 215, 0, 1)); }
+        40%  { left: 45%; top: 200px; transform: scale(1) rotate(0deg); }
+        55%  { left: 15%; top: 500px; transform: scale(1) rotate(-10deg); }
+        65%  { left: 15%; top: 500px; transform: scale(1.2) rotate(0deg); }
+        70%  { left: 15%; top: 500px; transform: scale(1.3) rotate(360deg); filter: drop-shadow(0 0 30px rgba(50, 255, 50, 1)); }
         100% { left: 120%; top: 300px; transform: scale(1) rotate(20deg); }
     }
 
     .harry-potter {
         position: fixed;
-        z-index: 99999; /* Zawsze na wierzchu */
-        width: 110px;   /* Rozmiar postaci */
-        /* Animacja trwa 25s, jest płynna (ease-in-out) i zapętlona */
+        z-index: 99999;
+        width: 110px;
         animation: guide-sequence 25s ease-in-out infinite;
-        pointer-events: none; /* Kliknięcia przez niego przechodzą */
+        pointer-events: none;
     }
 
-    /* Stylizacja Zakładek */
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    /* Stylizacja Zakładek Streamlit */
+    .stTabs [data-baseweb="tab-list"] { gap: 8px; }
     .stTabs [data-baseweb="tab"] {
-        height: 50px; white-space: pre-wrap; background-color: rgba(255,255,255,0.05);
-        border-radius: 10px 10px 0 0; color: white; font-weight: bold;
+        height: 45px; background-color: rgba(255,255,255,0.1);
+        border-radius: 8px 8px 0 0; color: white; border: none;
     }
     .stTabs [aria-selected="true"] { background-color: #00d2ff !important; color: black !important; }
-
-    /* Karty Ofert */
-    .offer-card {
-        background-color: rgba(0, 0, 0, 0.3); padding: 20px; border-radius: 15px;
-        border: 1px solid rgba(255, 255, 255, 0.1); margin-bottom: 20px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-    }
-
-    /* Teksty i Przyciski */
-    .offer-title { font-size: 20px; font-weight: 600; color: #f0f0f0; margin-bottom: 10px; }
-    .price-tag { font-size: 32px; font-weight: 800; color: #00d2ff; text-shadow: 0 0 10px rgba(0, 210, 255, 0.3); }
     
+    /* Ukrywamy standardowe marginesy Streamlit */
+    .block-container { padding-top: 2rem; }
+    
+    /* Przycisk Skanuj */
     div.stButton > button {
-        width: 100%; background: linear-gradient(90deg, #1CB5E0 0%, #000851 100%);
-        border: none; color: white; padding: 15px; font-weight: bold; border-radius: 10px;
+        background: linear-gradient(90deg, #00d2ff 0%, #3a7bd5 100%);
+        color: white; border: none; padding: 12px; font-weight: bold; border-radius: 8px;
+        text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     }
-    
-    a.link-btn {
-        display: inline-block; background-color: #ff416c; color: white !important;
-        padding: 8px 20px; border-radius: 50px; text-decoration: none; font-weight: bold; font-size: 14px;
-        transition: 0.3s;
-    }
-    a.link-btn:hover { background-color: #ff4b2b; transform: scale(1.05); }
-    
-    img.offer-img { border-radius: 10px; object-fit: cover; width:100%; height:200px; }
 </style>
 """, unsafe_allow_html=True)
 
-# --- 3. WSTAWIENIE MAGA-ASYSTENTA ---
-# Używamy niezawodnej grafiki 3D z GitHuba
+# --- 3. WSTAWIENIE MAGA ---
 st.markdown("""
 <img src="https://raw.githubusercontent.com/Tarikul-Islam-Anik/Animated-Fluent-Emojis/master/Emojis/People/Mage.png" class="harry-potter">
 """, unsafe_allow_html=True)
-
 
 # --- 4. BAZA DANYCH ---
 LINKS_MOJE = [
@@ -99,7 +154,8 @@ LINKS_MOJE = [
 ]
 LINKS_MIESZKANIA = [
     "https://www.otodom.pl/pl/oferta/mieszkanie-dwupoziomowe-z-ogrodem-pod-lesnica-ID4z02A",
-    "https://www.otodom.pl/pl/oferta/3-pokoje-z-balkonem-w-nowym-apartamentowcu-ID4yU9a"
+    "https://www.otodom.pl/pl/oferta/3-pokoje-z-balkonem-w-nowym-apartamentowcu-ID4yU9a",
+    "https://www.otodom.pl/pl/oferta/mieszkanie-3-pok-balkon-garaz-komorka-lokatorska-ID4z4ja" # Dodatkowy przykład
 ]
 LINKS_KAWALERKI = [
     "https://www.otodom.pl/pl/oferta/gotowe-do-odbioru-centrum-duzy-balkon-ID4z3Xy",
@@ -109,13 +165,13 @@ LINKS_DOMY = [
 ]
 
 
-# --- 5. FUNKCJE ---
+# --- 5. FUNKCJA POBIERANIA DANYCH ---
 def get_offer_data(url):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
         "Accept-Language": "pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7"
     }
-    offer_data = {"title": "Ładowanie...", "price_str": "Brak ceny", "image_url": "https://via.placeholder.com/600x400?text=Brak+Zdjecia", "link": url}
+    offer_data = {"title": "Ładowanie oferty...", "price_str": "Brak ceny", "image_url": "https://via.placeholder.com/600x400?text=Brak+Zdjecia", "link": url}
     
     try:
         response = requests.get(url, headers=headers)
@@ -138,54 +194,66 @@ def get_offer_data(url):
     except: pass
     return offer_data
 
-def render_tab(links_list, tab_name):
+# --- 6. FUNKCJA RENDEROWANIA SIATKI (GRID) ---
+def render_grid(links_list, tab_name):
     if not links_list:
-        st.info(f"Brak linków w kategorii: {tab_name}")
+        st.info("Brak ofert w tej kategorii.")
         return
 
-    if st.button(f"🔄 SKANUJ KATEGORIĘ: {tab_name.upper()}", key=tab_name):
+    if st.button(f"🔎 SKANUJ: {tab_name.upper()}", key=tab_name):
         progress_bar = st.progress(0)
         
+        # Pobieramy dane dla wszystkich linków
+        results = []
         for i, link in enumerate(links_list):
-            data = get_offer_data(link)
+            results.append(get_offer_data(link))
             progress_bar.progress((i + 1) / len(links_list))
-            
-            st.markdown(f"""
-            <div class="offer-card">
-                <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-                    <div style="flex: 1; min-width: 250px;">
-                        <img src="{data['image_url']}" class="offer-img">
+            time.sleep(0.2)
+        
+        progress_bar.empty()
+        
+        # --- RYSOWANIE SIATKI (3 KOLUMNY) ---
+        cols = st.columns(3) # Tworzymy 3 kolumny
+        
+        for i, data in enumerate(results):
+            # Wybieramy odpowiednią kolumnę (0, 1 lub 2)
+            with cols[i % 3]:
+                st.markdown(f"""
+                <div class="property-card">
+                    <div class="card-image-container">
+                        <div class="badge">NA SPRZEDAŻ</div>
+                        <img src="{data['image_url']}" class="card-image">
                     </div>
-                    <div style="flex: 2; min-width: 250px;">
-                        <div class="offer-title">{data['title']}</div>
-                        <div class="price-tag">{data['price_str']}</div>
-                        <div style="margin-top: 15px;">
-                            <a href="{data['link']}" target="_blank" class="link-btn">👉 PRZEJDŹ DO OFERTY</a>
-                        </div>
+                    <div class="card-content">
+                        <div class="card-price">{data['price_str']}</div>
+                        <div class="card-title">{data['title']}</div>
+                        <a href="{data['link']}" target="_blank" class="card-btn">ZOBACZ OFERTĘ</a>
                     </div>
                 </div>
-            </div>
-            """, unsafe_allow_html=True)
-            time.sleep(0.3)
-        progress_bar.empty()
-    else:
-        st.write(f"Ofert do sprawdzenia: **{len(links_list)}**")
+                """, unsafe_allow_html=True)
 
-# --- 6. GŁÓWNY INTERFEJS ---
+    else:
+        st.markdown(f"**Gotowy do pobrania {len(links_list)} ofert.** Kliknij przycisk powyżej.")
+
+# --- 7. GŁÓWNY INTERFEJS ---
 st.title("🏙️ Wrocław Estate Center")
+st.markdown("Profesjonalny monitoring rynku nieruchomości.")
 
 tab1, tab2, tab3, tab4 = st.tabs(["⭐ MOJE WYBRANE", "🏢 MIESZKANIA", "🛋️ KAWALERKI", "🏡 DOMY"])
 
 with tab1:
-    st.header("Moje Ulubione")
-    render_tab(LINKS_MOJE, "moje")
+    st.header("Twoja Lista Życzeń")
+    render_grid(LINKS_MOJE, "moje")
+
 with tab2:
-    st.header("Mieszkania Wrocław")
-    st.markdown("[🔍 Szukaj na Otodom](https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/dolnoslaskie/wroclaw/wroclaw/wroclaw?viewType=listing)")
-    render_tab(LINKS_MIESZKANIA, "mieszkania")
+    st.header("Mieszkania: Wrocław")
+    st.markdown("[Wszystkie mieszkania na Otodom](https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/dolnoslaskie/wroclaw/wroclaw/wroclaw)")
+    render_grid(LINKS_MIESZKANIA, "mieszkania")
+
 with tab3:
-    st.header("Kawalerki")
-    render_tab(LINKS_KAWALERKI, "kawalerki")
+    st.header("Kawalerki (Inwestycyjne)")
+    render_grid(LINKS_KAWALERKI, "kawalerki")
+
 with tab4:
-    st.header("Domy")
-    render_tab(LINKS_DOMY, "domy")
+    st.header("Domy i Szeregowce")
+    render_grid(LINKS_DOMY, "domy")
